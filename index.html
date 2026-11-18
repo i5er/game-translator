@@ -1,0 +1,870 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#07080f">
+<meta name="description" content="ترجمة لحظية لنصوص الألعاب والفيديو من الإنجليزي للعربي — مجانية وتشتغل في المتصفح">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="مترجم الألعاب">
+<title>مترجم الألعاب</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://translate.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07080f; --fg:#f4f6fb; --mut:rgba(235,240,255,.62); --mut2:rgba(235,240,255,.42);
+  --glass:rgba(255,255,255,.075); --glass2:rgba(255,255,255,.13); --stroke:rgba(255,255,255,.16); --stroke2:rgba(255,255,255,.28);
+  --acc:#8b6cff; --acc2:#36d6f5; --pink:#ff6fb5; --ok:#34d399; --warn:#fbbf24; --bad:#f87171;
+  --r:26px; --r2:18px; --blur:saturate(180%) blur(26px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html{background:var(--bg)}
+body{
+  font-family:"Tajawal",system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;color:var(--fg);background:var(--bg);
+  min-height:100vh;min-height:100dvh;overflow-x:hidden;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+button,select{font-family:inherit;color:inherit}
+svg.i{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+
+/* خلفية ملوّنة تتحرك ببطء — هي اللي تعطي الزجاج لمعته */
+.orbs{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
+.orbs i{position:absolute;border-radius:50%;filter:blur(60px);opacity:.8;will-change:transform}
+.orbs i:nth-child(1){width:52vmax;height:52vmax;background:radial-gradient(circle,#6d4bff 0,#6d4bff55 35%,transparent 70%);top:-18vmax;right:-14vmax;animation:drift1 26s ease-in-out infinite alternate}
+.orbs i:nth-child(2){width:46vmax;height:46vmax;background:radial-gradient(circle,#13b5d8 0,#13b5d855 35%,transparent 70%);bottom:-20vmax;left:-16vmax;animation:drift2 30s ease-in-out infinite alternate}
+.orbs i:nth-child(3){width:34vmax;height:34vmax;background:radial-gradient(circle,#ff4f9e 0,#ff4f9e55 35%,transparent 70%);top:38%;left:30%;opacity:.42;animation:drift3 34s ease-in-out infinite alternate}
+@keyframes drift1{to{transform:translate(-12vmax,10vmax) scale(1.1)}}
+@keyframes drift2{to{transform:translate(14vmax,-8vmax) scale(1.15)}}
+@keyframes drift3{to{transform:translate(-10vmax,-12vmax) scale(.9)}}
+.live .orbs i{animation-play-state:paused} /* توفير للمعالج أثناء الترجمة */
+@media (prefers-reduced-motion:reduce){.orbs i{animation:none}}
+
+/* الزجاج السائل */
+.glass{
+  position:relative;isolation:isolate;
+  background:linear-gradient(145deg,rgba(255,255,255,.13),rgba(255,255,255,.035) 55%,rgba(255,255,255,.07));
+  -webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);
+  border:1px solid var(--stroke);border-radius:var(--r);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.32),inset 0 -1px 0 rgba(255,255,255,.05),inset 0 0 22px rgba(255,255,255,.03),0 18px 50px rgba(0,0,0,.38);
+}
+.glass::before{ /* لمعة علوية */
+  content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:-1;
+  background:linear-gradient(180deg,rgba(255,255,255,.10),transparent 22%);
+}
+
+.wrap{max-width:980px;margin:0 auto;padding:16px 16px 40px;display:flex;flex-direction:column;gap:14px}
+
+/* الهيدر */
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 14px;border-radius:999px}
+.brand{display:flex;align-items:center;gap:11px;min-width:0}
+.logo{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;flex:none;
+  background:linear-gradient(135deg,var(--acc),var(--acc2));box-shadow:0 6px 20px rgba(139,108,255,.5),inset 0 1px 0 rgba(255,255,255,.5)}
+.logo svg{width:23px;height:23px;stroke:#fff}
+h1{font-size:17px;font-weight:800;line-height:1.2;white-space:nowrap}
+.tag{color:var(--mut);font-size:12px}
+.pills{display:flex;gap:6px;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:999px;font-size:12.5px;color:var(--mut);white-space:nowrap;
+  background:rgba(255,255,255,.07);border:1px solid var(--stroke)}
+.pill svg{width:14px;height:14px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--mut2);flex:none}
+.dot.on{background:var(--ok);box-shadow:0 0 10px var(--ok)}
+.dot.load{background:var(--warn);animation:blink 1s infinite}
+.dot.bad{background:var(--bad)}
+@keyframes blink{50%{opacity:.3}}
+
+/* اختيار المصدر */
+.sources{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.src{display:flex;align-items:center;gap:14px;text-align:right;padding:18px;cursor:pointer;border-radius:var(--r);transition:transform .2s,border-color .2s}
+.src:hover{transform:translateY(-2px);border-color:var(--stroke2)}
+.src:active{transform:scale(.98)}
+.src .ic{width:54px;height:54px;border-radius:18px;display:grid;place-items:center;flex:none;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 8px 22px rgba(0,0,0,.3)}
+.src .ic svg{width:26px;height:26px;stroke:#fff}
+.src:nth-child(1) .ic{background:linear-gradient(135deg,#7b5cff,#4a3bd6)}
+.src:nth-child(2) .ic{background:linear-gradient(135deg,#29c9ee,#1479b8)}
+.src b{display:block;font-size:16.5px;font-weight:700}
+.src small{color:var(--mut);font-size:12.5px;line-height:1.5}
+.src:disabled{opacity:.42;cursor:not-allowed;transform:none}
+.live .sources{display:none}
+
+/* بطاقة الترجمة */
+.subcard{padding:26px 22px 18px;border-radius:30px;min-height:170px;display:flex;flex-direction:column;justify-content:center;
+  background:linear-gradient(145deg,rgba(139,108,255,.20),rgba(255,255,255,.05) 45%,rgba(54,214,245,.13))}
+.subcard::after{content:"";position:absolute;inset:-1px;border-radius:inherit;padding:1px;pointer-events:none;
+  background:linear-gradient(120deg,rgba(255,255,255,.55),rgba(255,255,255,.05) 30%,rgba(255,255,255,.05) 70%,rgba(255,255,255,.4));
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude}
+#ar{font-size:clamp(25px,4.8vw,42px);font-weight:700;line-height:1.7;min-height:1.7em;text-align:center;word-wrap:break-word;
+  text-shadow:0 2px 18px rgba(0,0,0,.35);transition:opacity .25s}
+#ar.fade{animation:fade .2s ease}
+#ar.old{opacity:.38}
+#ar.idle{color:var(--mut);font-weight:500;font-size:clamp(17px,3vw,22px)}
+@keyframes fade{from{opacity:.2;transform:translateY(5px);filter:blur(3px)}to{opacity:1;transform:none;filter:none}}
+#en{direction:ltr;text-align:center;color:var(--mut2);font-size:13.5px;margin-top:10px;min-height:1.4em;font-family:system-ui,-apple-system,sans-serif}
+.subtools{display:flex;gap:8px;justify-content:center;margin-top:14px}
+.icbtn{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;cursor:pointer;color:var(--fg);
+  background:rgba(255,255,255,.08);border:1px solid var(--stroke);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.25);transition:.2s}
+.icbtn:hover{background:rgba(255,255,255,.15)}
+.icbtn.active{background:linear-gradient(135deg,var(--acc),#5b8cff);border-color:rgba(255,255,255,.35);box-shadow:0 6px 18px rgba(139,108,255,.5),inset 0 1px 0 rgba(255,255,255,.5)}
+.subcard:fullscreen{border-radius:0;padding:6vw;background:#07080f}
+.subcard:fullscreen #ar{font-size:clamp(32px,6.5vw,76px)}
+
+/* الصورة والتحكم */
+.panel{padding:12px;border-radius:var(--r)}
+.stage{position:relative;aspect-ratio:16/9;background:rgba(0,0,0,.55);border-radius:var(--r2);overflow:hidden;touch-action:none;cursor:crosshair;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.stage video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.stage .ph{position:absolute;inset:0;display:grid;place-items:center;align-content:center;gap:10px;text-align:center;color:var(--mut2);font-size:14px;padding:20px}
+.stage .ph svg{width:34px;height:34px;opacity:.6}
+.live .stage .ph{display:none}
+#sel{position:absolute;border:2px solid var(--acc2);border-radius:10px;background:rgba(54,214,245,.08);pointer-events:none;
+  box-shadow:0 0 0 9999px rgba(0,0,0,.42),0 0 22px rgba(54,214,245,.45)}
+#sel::after{content:"منطقة الترجمة";position:absolute;top:-27px;right:-2px;font-size:11.5px;font-weight:700;color:#04202a;
+  background:var(--acc2);padding:3px 9px;border-radius:999px;white-space:nowrap}
+body:not(.live) #sel{display:none}
+.hint{display:flex;gap:8px;align-items:center;color:var(--mut);font-size:12.5px;margin:11px 4px 4px;line-height:1.6}
+.hint svg{width:16px;height:16px;color:var(--acc2)}
+
+.controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;margin-top:12px}
+.grp{display:flex;flex-direction:column;gap:7px;min-width:0}
+.grp>span{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--mut);padding:0 4px}
+.grp>span svg{width:15px;height:15px}
+.seg{display:flex;padding:4px;border-radius:999px;background:rgba(0,0,0,.28);border:1px solid var(--stroke);box-shadow:inset 0 2px 6px rgba(0,0,0,.25)}
+.seg button{flex:1;border:0;background:transparent;color:var(--mut);padding:9px 8px;border-radius:999px;cursor:pointer;font-size:13.5px;font-weight:500;white-space:nowrap;transition:.2s}
+.seg button.active{color:#fff;font-weight:700;background:linear-gradient(180deg,rgba(255,255,255,.26),rgba(255,255,255,.1));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 4px 14px rgba(0,0,0,.3)}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:11px 16px;border-radius:999px;cursor:pointer;font-size:14px;font-weight:600;
+  background:rgba(255,255,255,.09);border:1px solid var(--stroke);box-shadow:inset 0 1px 0 rgba(255,255,255,.25);transition:.2s}
+.btn:hover{background:rgba(255,255,255,.16)}
+.btn svg{width:18px;height:18px}
+.btn.stop{background:rgba(248,113,113,.16);border-color:rgba(248,113,113,.45);color:#fecaca}
+select{width:100%;background:rgba(0,0,0,.3);border:1px solid var(--stroke);border-radius:999px;padding:10px 14px;font-size:13.5px;color:var(--fg)}
+select option{background:#151826}
+.only .panel.stagep{position:absolute;width:1px;height:1px;overflow:hidden;opacity:0;padding:0;border:0}
+.only .subcard{min-height:62vh}
+.only #ar{font-size:clamp(30px,6.5vw,58px)}
+.onlybar{display:none}
+.only .onlybar{display:flex;justify-content:center}
+
+/* السجل والمساعدة */
+.sec-h{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700}
+.sec-h svg{width:18px;height:18px;color:var(--acc2)}
+.hist{padding:16px 18px}
+.hist ul{list-style:none;margin-top:8px;max-height:320px;overflow:auto}
+.hist li{padding:11px 2px;border-top:1px solid rgba(255,255,255,.08)}
+.hist li:first-child{border-top:0}
+.hist .a{font-size:16px;line-height:1.65}
+.hist .e{direction:ltr;text-align:left;color:var(--mut2);font-size:12.5px;font-family:system-ui,-apple-system,sans-serif}
+.hist .empty{color:var(--mut2);font-size:13px;margin-top:10px}
+.help{padding:16px 18px}
+.help summary{cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between}
+.help summary::-webkit-details-marker{display:none}
+.help summary .chev{transition:transform .25s;color:var(--mut)}
+.help[open] summary .chev{transform:rotate(180deg)}
+.steps{display:grid;gap:10px;margin-top:14px}
+.step{display:flex;gap:12px;align-items:flex-start;padding:12px;border-radius:var(--r2);background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)}
+.step .n{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;flex:none;background:rgba(255,255,255,.1);box-shadow:inset 0 1px 0 rgba(255,255,255,.3)}
+.step .n svg{width:17px;height:17px}
+.step b{display:block;font-size:14.5px;margin-bottom:2px}
+.step p{color:var(--mut);font-size:13px;line-height:1.7}
+.tips{color:var(--mut);font-size:12.5px;margin-top:12px;line-height:1.8}
+footer{text-align:center;color:var(--mut2);font-size:12px;padding-top:4px}
+
+.toast{position:fixed;bottom:calc(22px + env(safe-area-inset-bottom));left:50%;transform:translate(-50%,140px);z-index:9;max-width:92vw;
+  padding:12px 20px;border-radius:999px;font-size:14px;text-align:center;opacity:0;visibility:hidden;
+  transition:transform .35s cubic-bezier(.2,.9,.3,1.2),opacity .25s,visibility .35s}
+.toast.show{transform:translate(-50%,0);opacity:1;visibility:visible}
+
+@media (max-width:640px){
+  .wrap{padding:12px 12px 32px;gap:12px}
+  header{border-radius:24px}
+  .tag{display:none}
+  .sources{grid-template-columns:1fr}
+  .src{padding:15px}
+  .subcard{padding:22px 16px 16px;border-radius:26px}
+  .controls{grid-template-columns:1fr}
+}
+/* مستعرضات بدون دعم للتمويه */
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .glass{background:rgba(22,24,38,.92)}
+}
+/* النافذة العائمة */
+body.pip{display:flex;align-items:center;justify-content:center;padding:14px;background:#07080f}
+body.pip #pipAr{font-size:clamp(20px,7vw,40px);font-weight:700;line-height:1.6;text-align:center;color:#fff;transition:opacity .25s}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-pad" viewBox="0 0 24 24"><path d="M6 11h4M8 9v4M15 12h.01M18 10h.01"/><path d="M17.32 5H6.68a4 4 0 0 0-3.98 3.59l-.9 7.87A2.5 2.5 0 0 0 4.3 19.2c.88 0 1.62-.55 1.97-1.37L7 16h10l.74 1.83c.35.82 1.09 1.37 1.97 1.37a2.5 2.5 0 0 0 2.49-2.74l-.9-7.87A4 4 0 0 0 17.32 5z"/></symbol>
+  <symbol id="i-monitor" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2.5"/><path d="M8 21h8M12 17v4"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3z"/><circle cx="12" cy="13" r="3.2"/></symbol>
+  <symbol id="i-sound" viewBox="0 0 24 24"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></symbol>
+  <symbol id="i-pip" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2.5"/><rect x="11.5" y="11.5" width="7.5" height="5.5" rx="1.2"/></symbol>
+  <symbol id="i-full" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M16 21h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></symbol>
+  <symbol id="i-subs" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2.5"/><path d="M7 15h4M14 15h3M7 11h2M12 11h5"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2.5"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M12 7v5l3.5 2"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M9.2 9a3 3 0 0 1 5.8 1c0 2-3 2.8-3 2.8M12 17h.01"/></symbol>
+  <symbol id="i-zap" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></symbol>
+  <symbol id="i-crop" viewBox="0 0 24 24"><path d="M6 2v14a2 2 0 0 0 2 2h14M18 22V8a2 2 0 0 0-2-2H2"/></symbol>
+  <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M12 14l4-4"/><path d="M3.3 19a10 10 0 1 1 17.4 0"/></symbol>
+  <symbol id="i-contrast" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M12 2.5v19a9.5 9.5 0 0 0 0-19z" fill="currentColor"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-tv" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="13" rx="2.5"/><path d="m8 2 4 4 4-4"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M11 18h2"/></symbol>
+  <symbol id="i-cable" viewBox="0 0 24 24"><path d="M4 9V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4M7 9v6a4 4 0 0 0 8 0v-2M14 9V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v4H14zM17 9v4"/></symbol>
+  <symbol id="i-hand" viewBox="0 0 24 24"><path d="M9 11V5.5a1.5 1.5 0 0 1 3 0V11M12 10V4.5a1.5 1.5 0 0 1 3 0V11M15 10.5V6.5a1.5 1.5 0 0 1 3 0V15a7 7 0 0 1-7 7h-.5a7 7 0 0 1-5.4-2.6L3 16.6a1.6 1.6 0 0 1 2.4-2.1L9 17V8.5a1.5 1.5 0 0 1 3 0"/></symbol>
+</svg>
+<div class="orbs"><i></i><i></i><i></i></div>
+
+<div class="wrap">
+  <header class="glass">
+    <div class="brand">
+      <div class="logo"><svg class="i"><use href="#i-pad"/></svg></div>
+      <div>
+        <h1>مترجم الألعاب اللحظي</h1>
+        <div class="tag">إنجليزي ← عربي فوراً · مجاني بالكامل</div>
+      </div>
+    </div>
+    <div class="pills">
+      <span class="pill"><span class="dot" id="stDot"></span><span id="stTxt">جاري التجهيز…</span></span>
+      <span class="pill" id="engPill"><svg class="i"><use href="#i-zap"/></svg><span id="engTxt">—</span></span>
+    </div>
+  </header>
+
+  <div class="sources">
+    <button class="src glass" id="bScreen">
+      <span class="ic"><svg class="i"><use href="#i-monitor"/></svg></span>
+      <span><b>مشاركة الشاشة</b><small id="screenNote">للكمبيوتر — اختر نافذة PS Remote Play أو الفيديو</small></span>
+    </button>
+    <button class="src glass" id="bCam">
+      <span class="ic"><svg class="i"><use href="#i-camera"/></svg></span>
+      <span><b>الكاميرا / كارت التقاط</b><small>للجوال والآيباد — وجّهها على التلفزيون</small></span>
+    </button>
+  </div>
+
+  <section class="subcard glass" id="subCard">
+    <div id="ar" class="idle">اختر مصدر الصورة وابدأ… الترجمة بتطلع هنا</div>
+    <div id="en"></div>
+    <div class="subtools">
+      <button class="icbtn" id="bTts" title="قراءة الترجمة بصوت" aria-label="قراءة الترجمة بصوت"><svg class="i"><use href="#i-sound"/></svg></button>
+      <button class="icbtn" id="bPip" title="نافذة عائمة فوق اللعبة" aria-label="نافذة عائمة" hidden><svg class="i"><use href="#i-pip"/></svg></button>
+      <button class="icbtn" id="bFs" title="ملء الشاشة" aria-label="ملء الشاشة"><svg class="i"><use href="#i-full"/></svg></button>
+    </div>
+  </section>
+
+  <div class="onlybar"><button class="btn glass" id="bOnly2"><svg class="i"><use href="#i-eye"/></svg>إظهار الصورة والإعدادات</button></div>
+
+  <section class="panel glass stagep">
+    <div class="stage" id="stage">
+      <video id="v" autoplay playsinline muted></video>
+      <div class="ph"><svg class="i"><use href="#i-tv"/></svg>الصورة بتظهر هنا بعد ما تختار المصدر</div>
+      <div id="sel"></div>
+    </div>
+    <div class="hint"><svg class="i"><use href="#i-hand"/></svg>اسحب على الصورة لتحديد مكان النص فقط — كل ما صغرت المنطقة صارت الترجمة أسرع وأدق.</div>
+    <div class="controls">
+      <div class="grp"><span><svg class="i"><use href="#i-crop"/></svg>المنطقة</span>
+        <div class="seg" id="segRegion">
+          <button data-v="sub">الحوار تحت</button><button data-v="mid">الوسط</button><button data-v="all">كامل</button>
+        </div>
+      </div>
+      <div class="grp"><span><svg class="i"><use href="#i-gauge"/></svg>السرعة</span>
+        <div class="seg" id="segSpeed">
+          <button data-v="40">خارقة</button><button data-v="120">سريعة</button><button data-v="350">موفّرة</button>
+        </div>
+      </div>
+      <div class="grp"><span><svg class="i"><use href="#i-contrast"/></svg>لون النص</span>
+        <div class="seg" id="segPol">
+          <button data-v="auto">تلقائي</button><button data-v="light">فاتح</button><button data-v="dark">غامق</button>
+        </div>
+      </div>
+      <div class="grp" id="camGrp" hidden><span><svg class="i"><use href="#i-camera"/></svg>الكاميرا</span><select id="camSel"></select></div>
+    </div>
+    <div class="actions">
+      <button class="btn" id="bOnly"><svg class="i"><use href="#i-subs"/></svg>الترجمة فقط</button>
+      <button class="btn stop" id="bStop" hidden><svg class="i"><use href="#i-stop"/></svg>إيقاف</button>
+    </div>
+  </section>
+
+  <section class="hist glass">
+    <div class="sec-h"><svg class="i"><use href="#i-clock"/></svg>آخر الترجمات</div>
+    <div class="empty" id="histEmpty">لا يوجد شيء بعد</div>
+    <ul id="hist"></ul>
+  </section>
+
+  <details class="help glass">
+    <summary><span class="sec-h"><svg class="i"><use href="#i-help"/></svg>طريقة الربط مع البلايستيشن</span><svg class="i chev"><use href="#i-chev"/></svg></summary>
+    <div class="steps">
+      <div class="step"><span class="n"><svg class="i"><use href="#i-monitor"/></svg></span><div><b>على الكمبيوتر (الأفضل)</b><p>شغّل لعبتك عبر تطبيق PS Remote Play، ثم اضغط «مشاركة الشاشة» واختر نافذة Remote Play.</p></div></div>
+      <div class="step"><span class="n"><svg class="i"><use href="#i-phone"/></svg></span><div><b>على الجوال أو الآيباد</b><p>اضغط «الكاميرا» ووجّه الكاميرا الخلفية على التلفزيون، ثبّت الجوال، وحدد مكان الحوار.</p></div></div>
+      <div class="step"><span class="n"><svg class="i"><use href="#i-cable"/></svg></span><div><b>كارت التقاط HDMI</b><p>وصّله بالكمبيوتر، اضغط «الكاميرا» واختر الكارت من القائمة.</p></div></div>
+    </div>
+    <p class="tips">فعّل الترجمة (Subtitles) داخل اللعبة وكبّر خطها إن أمكن. على الجوال: أضف الموقع للشاشة الرئيسية من قائمة المشاركة عشان يفتح مثل التطبيق.</p>
+  </details>
+
+  <footer>كل القراءة تتم داخل جهازك · الترجمة عبر Google المجاني</footer>
+</div>
+<div class="toast glass" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.1/tesseract.min.js"></script>
+<script>
+(() => {
+const $ = s => document.querySelector(s);
+const v = $('#v'), stage = $('#stage'), sel = $('#sel');
+
+/* ---------- إعدادات محفوظة ---------- */
+const store = {
+  get(k, d){ try{ const x = localStorage.getItem('gt_'+k); return x == null ? d : JSON.parse(x); }catch(e){ return d; } },
+  set(k, x){ try{ localStorage.setItem('gt_'+k, JSON.stringify(x)); }catch(e){} }
+};
+const REGIONS = { sub:{x:.02,y:.70,w:.96,h:.27}, mid:{x:.10,y:.35,w:.80,h:.30}, all:{x:0,y:0,w:1,h:1} };
+const S = {
+  speed: [40,120,350].includes(store.get('speed2', 40)) ? store.get('speed2', 40) : 40,
+  pol:   store.get('pol', 'auto'),
+  tts:   store.get('tts', false),
+  region:store.get('region', REGIONS.sub),
+};
+
+/* ---------- واجهة ---------- */
+function setStatus(kind, txt){ $('#stDot').className = 'dot ' + (kind||''); $('#stTxt').textContent = txt; }
+function setEngine(txt){ $('#engTxt').textContent = txt; }
+let toastT;
+function toast(t){ const el = $('#toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(()=>el.classList.remove('show'), 4000); }
+
+function bindSeg(id, key, onChange){
+  const seg = $(id);
+  const paint = () => seg.querySelectorAll('button').forEach(b => b.classList.toggle('active', String(S[key]) === b.dataset.v));
+  seg.addEventListener('click', e => {
+    const b = e.target.closest('button'); if(!b) return;
+    const val = isNaN(+b.dataset.v) ? b.dataset.v : +b.dataset.v;
+    S[key] = val; store.set(key === 'speed' ? 'speed2' : key, val); paint(); onChange && onChange(val);
+  });
+  paint();
+}
+bindSeg('#segSpeed', 'speed');
+bindSeg('#segPol', 'pol', () => { lastSig = null; });
+$('#segRegion').addEventListener('click', e => {
+  const b = e.target.closest('button'); if(!b) return;
+  setRegion({...REGIONS[b.dataset.v]});
+});
+function setRegion(r){ S.region = r; store.set('region', r); drawSel(); lastSig = null; lastNorm = ''; }
+
+$('#bTts').classList.toggle('active', S.tts);
+$('#bTts').onclick = () => {
+  S.tts = !S.tts; store.set('tts', S.tts); $('#bTts').classList.toggle('active', S.tts);
+  if(!S.tts && 'speechSynthesis' in self) speechSynthesis.cancel();
+  toast(S.tts ? 'القراءة الصوتية شغّالة' : 'القراءة الصوتية متوقفة');
+};
+const toggleOnly = () => { document.body.classList.toggle('only'); setTimeout(drawSel, 50); };
+$('#bOnly').onclick = toggleOnly; $('#bOnly2').onclick = toggleOnly;
+$('#bFs').onclick = () => {
+  const c = $('#subCard');
+  if(document.fullscreenElement) document.exitFullscreen();
+  else (c.requestFullscreen || c.webkitRequestFullscreen || (()=>toast('جهازك ما يدعم ملء الشاشة'))).call(c);
+};
+
+/* ---------- تحديد المنطقة ---------- */
+function vbox(){
+  const W = v.clientWidth, H = v.clientHeight, vw = v.videoWidth || 16, vh = v.videoHeight || 9;
+  const s = Math.min(W/vw, H/vh), w = vw*s, h = vh*s;
+  return { x:(W-w)/2, y:(H-h)/2, w, h };
+}
+function drawSel(){
+  const b = vbox(), R = S.region;
+  sel.style.left = (b.x + R.x*b.w) + 'px'; sel.style.top = (b.y + R.y*b.h) + 'px';
+  sel.style.width = (R.w*b.w) + 'px';     sel.style.height = (R.h*b.h) + 'px';
+}
+new ResizeObserver(drawSel).observe(stage);
+v.addEventListener('loadedmetadata', drawSel);
+let drag = null;
+function rel(e){
+  const r = stage.getBoundingClientRect(), b = vbox();
+  const cl = n => Math.min(1, Math.max(0, n));
+  return { x: cl((e.clientX - r.left - b.x)/b.w), y: cl((e.clientY - r.top - b.y)/b.h) };
+}
+stage.addEventListener('pointerdown', e => { if(!stream) return; drag = rel(e); stage.setPointerCapture(e.pointerId); });
+stage.addEventListener('pointermove', e => {
+  if(!drag) return; const p = rel(e);
+  S.region = { x:Math.min(drag.x,p.x), y:Math.min(drag.y,p.y), w:Math.abs(p.x-drag.x), h:Math.abs(p.y-drag.y) };
+  drawSel();
+});
+stage.addEventListener('pointerup', () => {
+  if(!drag) return; drag = null;
+  if(S.region.w < .03 || S.region.h < .02) setRegion({...REGIONS.sub}); else setRegion(S.region);
+});
+
+/* ---------- محرك القراءة (OCR) ---------- */
+let worker = null, ocrReady = null;
+function initOCR(){
+  if(!ocrReady){
+    setStatus('load', 'تحميل محرك القراءة…');
+    ocrReady = (async () => {
+      worker = await Tesseract.createWorker('eng', 1);
+      await worker.setParameters({
+        tessedit_pageseg_mode:'6', preserve_interword_spaces:'1', user_defined_dpi:'300',
+        tessedit_char_whitelist:"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 .,!?'\"-:;()/%$&+#@*[]…’‘“”",
+      });
+      setStatus(stream ? 'on' : '', stream ? 'يترجم الآن' : 'جاهز — اختر المصدر');
+    })().catch(err => { ocrReady = null; setStatus('bad', 'فشل تحميل المحرك — تأكد من الإنترنت'); throw err; });
+  }
+  return ocrReady;
+}
+
+const cv = document.createElement('canvas'), cx = cv.getContext('2d', { willReadFrequently:true });
+const sm = document.createElement('canvas'); sm.width = 64; sm.height = 16;
+const smx = sm.getContext('2d', { willReadFrequently:true });
+const hist = new Uint32Array(256);
+
+// ترجمات الألعاب غالباً نص أبيض (أو أصفر) بحدود سوداء فوق مشهد متحرك.
+// نعزل بكسلات النص الفاتح فقط ونحذف الخلفية → نص أسود نظيف على أبيض.
+const isLightText = (r,g,b) => {
+  const mx = r>g ? (r>b?r:b) : (g>b?g:b), mn = r<g ? (r<b?r:b) : (g<b?g:b);
+  return (mn >= 175 && mx - mn <= 55) || (r > 200 && g > 170 && b < 130); // أبيض/رمادي فاتح أو أصفر
+};
+function otsu(d, n){
+  hist.fill(0);
+  for(let i = 0; i < d.length; i += 4) hist[(d[i]*77 + d[i+1]*150 + d[i+2]*29) >> 8]++;
+  let sum = 0; for(let t = 0; t < 256; t++) sum += t*hist[t];
+  let sB = 0, wB = 0, best = -1, th = 128;
+  for(let t = 0; t < 256; t++){
+    wB += hist[t]; if(!wB) continue; const wF = n - wB; if(!wF) break;
+    sB += t*hist[t]; const mB = sB/wB, mF = (sum - sB)/wF, b = wB*wF*(mB-mF)*(mB-mF);
+    if(b > best){ best = b; th = t; }
+  }
+  return th;
+}
+// يحوّل الصورة إلى قناع: 1 = بكسل نص
+function toMask(d, m, mode){
+  if(mode === 'light'){
+    for(let i = 0, j = 0; i < d.length; i += 4, j++) m[j] = isLightText(d[i],d[i+1],d[i+2]) ? 1 : 0;
+  } else { // نص غامق داخل صندوق حوار فاتح
+    const th = otsu(d, d.length >> 2);
+    for(let i = 0, j = 0; i < d.length; i += 4, j++) m[j] = ((d[i]*77 + d[i+1]*150 + d[i+2]*29) >> 8) <= th ? 1 : 0;
+  }
+}
+
+// كاشف أسطر النص: يبقي فقط الحروف المصفوفة جنب بعض على سطر واحد،
+// ويحذف أي شيء متحرك بالخلفية (أضواء، ثلج، سماء، عناصر الفيديو)
+let lab = new Int32Array(0), stk = new Int32Array(0);
+function textLines(m, w, h){
+  const N = w*h;
+  if(lab.length < N){ lab = new Int32Array(N); stk = new Int32Array(N); } else lab.fill(0, 0, N);
+  const C = []; let id = 0;
+  for(let p = 0; p < N; p++){
+    if(!m[p] || lab[p]) continue;
+    id++; let sp = 0; stk[sp++] = p; lab[p] = id;
+    let x0 = w, x1 = 0, y0 = h, y1 = 0, a = 0;
+    while(sp){
+      const q = stk[--sp], x = q % w, y = (q - x)/w; a++;
+      if(x < x0) x0 = x; if(x > x1) x1 = x; if(y < y0) y0 = y; if(y > y1) y1 = y;
+      if(x > 0     && m[q-1] && !lab[q-1]){ lab[q-1] = id; stk[sp++] = q-1; }
+      if(x < w-1   && m[q+1] && !lab[q+1]){ lab[q+1] = id; stk[sp++] = q+1; }
+      if(y > 0     && m[q-w] && !lab[q-w]){ lab[q-w] = id; stk[sp++] = q-w; }
+      if(y < h-1   && m[q+w] && !lab[q+w]){ lab[q+w] = id; stk[sp++] = q+w; }
+    }
+    C.push({ id, x0, x1, y0, y1, a, cw: x1-x0+1, ch: y1-y0+1, cy: (y0+y1)/2, keep: false });
+  }
+  // ارتفاع الحرف النموذجي
+  const hs = C.filter(c => c.a >= 20 && c.ch >= 10 && c.ch <= h*.6 && c.cw <= c.ch*4).map(c => c.ch).sort((a,b) => a-b);
+  if(hs.length < 3) return null;
+  const H = hs[Math.floor(hs.length*.6)];
+  const letters = C.filter(c => c.ch >= H*.45 && c.ch <= H*1.5 && c.cw <= H*3 && c.a >= 12).sort((a,b) => a.x0 - b.x0);
+  // نجمع الحروف في أسطر حسب الارتفاع، ثم في كتل حسب المسافة الأفقية
+  const lines = [];
+  for(const c of letters){
+    let L = lines.find(l => Math.abs(l.cy - c.cy) < H*.45 && c.x0 - l.x1 < H*1.6);
+    if(!L){ L = { cy: c.cy, x0: c.x0, x1: c.x1, y0: c.y0, y1: c.y1, items: [] }; lines.push(L); }
+    L.items.push(c); L.x1 = Math.max(L.x1, c.x1); L.y0 = Math.min(L.y0, c.y0); L.y1 = Math.max(L.y1, c.y1);
+    L.cy += (c.cy - L.cy)/L.items.length;
+  }
+  // سطر نص حقيقي = حروف كثيرة متقاربة ومتساوية الارتفاع
+  const good = lines.filter(L => {
+    if(L.items.length < 3) return false;
+    const width = L.x1 - L.x0 + 1, ink = L.items.reduce((s,c) => s + c.cw, 0);
+    const hv = L.items.map(c => c.ch), mean = hv.reduce((a,b) => a+b, 0)/hv.length;
+    const sd = Math.sqrt(hv.reduce((s,x) => s + (x-mean)**2, 0)/hv.length);
+    return width >= H*1.8 && ink/width > .35 && sd/mean < .35;
+  });
+  if(!good.length) return null;
+  const keepId = new Uint8Array(id+1);
+  let bx0 = w, bx1 = 0, by0 = h, by1 = 0;
+  for(const L of good){
+    for(const c of L.items) keepId[c.id] = 1;
+    const ey0 = L.y0 - H*.5, ey1 = L.y1 + H*.35;
+    // النقاط والفواصل وعلامات الترقيم داخل السطر
+    for(const c of C) if(!keepId[c.id] && c.ch < H*.6 && c.cw < H*.6 && c.x0 >= L.x0 - H*.4 && c.x1 <= L.x1 + H*.6 && c.y0 >= ey0 && c.y1 <= ey1) keepId[c.id] = 1;
+    bx0 = Math.min(bx0, L.x0); bx1 = Math.max(bx1, L.x1); by0 = Math.min(by0, L.y0); by1 = Math.max(by1, L.y1);
+  }
+  for(let p = 0; p < N; p++) m[p] = lab[p] && keepId[lab[p]] ? 1 : 0;
+  return { x0: Math.max(0, bx0 - 4), y0: Math.max(0, by0 - Math.round(H*.5)), x1: Math.min(w-1, bx1 + 4), y1: Math.min(h-1, by1 + 4), H };
+}
+
+const PAD = 20;
+let mask = new Uint8Array(0), prefMode = 'light';
+const src = document.createElement('canvas'), sx2 = src.getContext('2d', { willReadFrequently:true });
+function regionPx(){
+  const vw = v.videoWidth, vh = v.videoHeight;
+  if(!vw || v.readyState < 2) return null;
+  const R = S.region;
+  return { sx: R.x*vw, sy: R.y*vh, sw: Math.max(16, R.w*vw), sh: Math.max(16, R.h*vh) };
+}
+// فحص سريع وخفيف جداً (عيّنة صغيرة) — يكشف هل تغيّرت المنطقة بدون ما يثقل الجهاز
+const QW = 256, QH = 64;
+const qc = document.createElement('canvas'); qc.width = QW; qc.height = QH;
+const qx = qc.getContext('2d', { willReadFrequently:true }); qx.imageSmoothingEnabled = false;
+function quick(){
+  const p = regionPx(); if(!p) return null;
+  qx.drawImage(v, p.sx, p.sy, p.sw, p.sh, 0, 0, QW, QH);
+  const d = qx.getImageData(0, 0, QW, QH).data, sig = new Uint8Array(QW*QH);
+  let cnt = 0;
+  for(let i = 0, j = 0; i < d.length; i += 4, j++){
+    if(isLightText(d[i],d[i+1],d[i+2])){ sig[j] = 1; cnt++; }
+    else sig[j] = (d[i]*77 + d[i+1]*150 + d[i+2]*29) >> 13 << 1; // سطوع تقريبي للنص الغامق
+  }
+  return sig;
+}
+// المعالجة الكاملة لصورة واضحة جاهزة للقراءة. ترجع false لو ما فيه سطر نص
+function prepare(){
+  const p = regionPx(); if(!p) return false;
+  const sc = Math.min(2.5, Math.max(.6, 1000/p.sw));
+  const w = Math.round(p.sw*sc), h = Math.round(p.sh*sc);
+  if(src.width !== w || src.height !== h){ src.width = w; src.height = h; }
+  sx2.imageSmoothingQuality = 'high';
+  sx2.drawImage(v, p.sx, p.sy, p.sw, p.sh, 0, 0, w, h);
+  const img = sx2.getImageData(0, 0, w, h), d = img.data;
+  if(mask.length < w*h) mask = new Uint8Array(w*h);
+  // تلقائي: نجرب النص الفاتح أولاً (الأشهر بالألعاب والأفلام)، وإذا ما لقينا سطر نجرب النص الغامق
+  const modes = S.pol === 'auto' ? (prefMode === 'dark' ? ['dark','light'] : ['light','dark']) : [S.pol];
+  let box = null;
+  for(const md of modes){
+    toMask(d, mask, md); box = textLines(mask, w, h);
+    if(box){ prefMode = md; break; }
+  }
+  if(!box) return false;
+  for(let i = 0, j = 0; i < d.length; i += 4, j++){ const o = mask[j] ? 0 : 255; d[i] = d[i+1] = d[i+2] = o; d[i+3] = 255; }
+  sx2.putImageData(img, 0, 0);
+  const bw = box.x1 - box.x0 + 1, bh = box.y1 - box.y0 + 1;
+  cv.width = bw + PAD*2; cv.height = bh + PAD*2;
+  cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height);
+  cx.drawImage(src, box.x0, box.y0, bw, bh, PAD, PAD, bw, bh);
+  return true;
+}
+function changed(a, b){
+  if(!b || a.length !== b.length) return true;
+  let n = 0; for(let i = 0; i < a.length; i++) if(a[i] !== b[i]) n++;
+  return n > 40;
+}
+
+/* ---------- تنظيف النص ---------- */
+// تصحيح أخطاء القراءة داخل الأرقام: O→0 ، l/I→1 ، S→5 ، B→8
+function fixToken(w){
+  if(/\d/.test(w)){
+    const core = w.replace(/[^A-Za-z0-9]/g, ''), dg = (core.match(/\d/g) || []).length;
+    if(dg >= core.length/2) w = w.replace(/[Oo]/g, '0').replace(/[lI|]/g, '1').replace(/S/g, '5').replace(/B/g, '8');
+  }
+  return w;
+}
+const okTok = w => /[A-Za-z]{2,}/.test(w) || /\d/.test(w) || /^[IiAa][.,!?']?$/.test(w) || /^[A-Z][.:!?]?$/.test(w) || /^[-–—…!?.]+$/.test(w);
+function clean(raw){
+  let t = (raw || '').replace(/[‘’`]/g, "'").replace(/[“”]/g, '"').replace(/\s+/g, ' ').trim();
+  const words = t.split(' ').map(fixToken);
+  while(words.length && !okTok(words[0])) words.shift();              // شوائب في البداية
+  while(words.length && !okTok(words[words.length-1])) words.pop();   // شوائب في النهاية
+  t = words.join(' ').replace(/\s+([.,!?:;%)])/g, '$1').replace(/([($])\s+/g, '$1')
+       .replace(/(^|[.!?"]\s+)[1l|](?=\s+[a-z])/g, '$1I');   // "1 told you" → "I told you"
+  const L = (t.match(/[A-Za-z]/g) || []).length, D = (t.match(/\d/g) || []).length;
+  if(L < 2 || !/[A-Za-z]{2,}/.test(t) || (L + D)/t.replace(/\s/g, '').length < .6) return '';
+  return t;
+}
+const norm = s => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+const sameText = (a, b) => a === b || (!!a && !!b &&
+  (a.match(/\d+/g) || []).join() === (b.match(/\d+/g) || []).join() && similar(a, b)); // الأرقام لازم تتطابق تماماً
+function similar(a, b){ // تشابه الحروف الثنائية — لتجاهل رجفة القراءة
+  if(!a || !b) return false; if(a === b) return true;
+  if(Math.abs(a.length - b.length) > Math.max(a.length, b.length)*.12) return false;
+  const bg = s => { const m = new Map(); for(let i = 0; i < s.length-1; i++){ const k = s.substr(i,2); m.set(k,(m.get(k)||0)+1); } return m; };
+  const A = bg(a), B = bg(b); let inter = 0;
+  for(const [k,c] of A) inter += Math.min(c, B.get(k)||0);
+  return (2*inter)/((a.length-1)+(b.length-1)) > .9;
+}
+
+/* ---------- الترجمة ---------- */
+const cache = new Map();
+let devTr = null, devTrTried = false;
+async function prepDevice(){ // مترجم Chrome المدمج: يشتغل على الجهاز وبدون إنترنت
+  if(devTr || devTrTried || !('Translator' in self)) return;
+  devTrTried = true;
+  try{
+    const av = await Translator.availability({ sourceLanguage:'en', targetLanguage:'ar' });
+    if(av === 'unavailable') return;
+    devTr = await Translator.create({ sourceLanguage:'en', targetLanguage:'ar',
+      monitor(m){ m.addEventListener('downloadprogress', e => setEngine('تحميل مترجم الجهاز ' + Math.round(e.loaded*100) + '%')); } });
+  }catch(e){ devTrTried = false; }
+}
+async function trGoogleOnce(text, ctl){
+  const r = await fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ar&dt=t&q=' + encodeURIComponent(text), { signal: ctl.signal });
+  if(!r.ok) throw 0;
+  const j = await r.json();
+  return j[0].map(x => x[0]).join('').trim();
+}
+// طلب احتياطي: لو الرد تأخر أكثر من 450ms نرسل طلب ثاني وناخذ الأسرع (يقلل التأخير المفاجئ)
+function trGoogle(text){
+  const ctls = [], kill = () => ctls.forEach(c => c.abort());
+  const go = () => { const c = new AbortController(); ctls.push(c); return trGoogleOnce(text, c); };
+  return new Promise((res, rej) => {
+    let fails = 0, started = 1;
+    const ok = v => { clearTimeout(h); clearTimeout(t); kill(); res(v); };
+    const bad = () => { if(++fails >= started){ clearTimeout(h); clearTimeout(t); rej(0); } };
+    go().then(ok, bad);
+    const h = setTimeout(() => { started++; go().then(ok, bad); }, 450);
+    const t = setTimeout(() => { kill(); rej(0); }, 3500);
+  });
+}
+// إبقاء الاتصال بـ Google دافي عشان ما نخسر وقت فتح اتصال جديد
+setInterval(() => { if(running) trGoogleOnce('ok', new AbortController()).catch(()=>{}); }, 15000);
+async function trMyMemory(text){
+  const r = await fetch('https://api.mymemory.translated.net/get?langpair=en|ar&q=' + encodeURIComponent(text));
+  const j = await r.json(); return j && j.responseData && j.responseData.translatedText;
+}
+// تجهيز النص قبل الترجمة: الكلام المكتوب كله كابيتال يترجم أسوأ → نحوله لجملة عادية
+const KEEP_UP = /\b(hp|xp|mp|sp|ok|npc|ui|dlc|fps|pvp|pve|rpg|ai|usa|uk|fbi|cia|dna|tv|ps\d?)\b/gi;
+function prep(en){
+  const letters = en.replace(/[^A-Za-z]/g, '');
+  if(letters.length >= 6 && letters === letters.toUpperCase()){
+    en = en.toLowerCase()
+      .replace(/(^|[.!?]\s+)([a-z])/g, (m, a, b) => a + b.toUpperCase())
+      .replace(/\b([b-z])\b/g, m => m.toUpperCase())          // أزرار مثل X و R1 تبقى كبيرة
+      .replace(KEEP_UP, s => s.toUpperCase());
+  }
+  return en;
+}
+// تنسيق الناتج: أرقام إنجليزية مثل اللعبة + التأكد إن ما ضاع رقم
+const AR_DIG = '٠١٢٣٤٥٦٧٨٩';
+function post(ar){
+  return ar.replace(/[٠-٩]/g, d => AR_DIG.indexOf(d)).replace(/٪/g, '%').replace(/٫/g, '.').replace(/٬/g, ',').replace(/\s+/g, ' ').trim();
+}
+const nums = s => (s.match(/\d+(?:[.,:\/]\d+)*/g) || []).map(x => x.replace(/,/g, ''));
+const keepsNums = (en, ar) => { const A = nums(ar); return nums(en).every(n => A.includes(n)); };
+
+// يعرض أسرع ترجمة متاحة فوراً (من الجهاز)، ثم يستبدلها بالأدق (Google) لما توصل
+async function translate(raw, cb){
+  if(cache.has(raw)){ cb(cache.get(raw), 'فوري ⚡', true); return; }
+  const en = prep(raw);
+  let final = false, devAr = null;
+  if(devTr) devTr.translate(en).then(ar => { devAr = ar && post(ar); if(!final && devAr) cb(devAr, 'الجهاز ⚡', false); }).catch(()=>{});
+  const g = await trGoogle(en).then(post).catch(() => null);
+  const done = (ar, eng) => { final = true; cache.set(raw, ar); cb(ar, eng, true); };
+  if(g){
+    // لو Google ضيّع رقم وترجمة الجهاز حافظة الأرقام، نعتمد ترجمة الجهاز
+    if(!keepsNums(raw, g) && devAr && keepsNums(raw, devAr)) return done(devAr, 'الجهاز');
+    return done(g, 'Google');
+  }
+  try{ if(devTr){ const ar = post(await devTr.translate(en)); if(ar) return done(ar, 'الجهاز'); } }catch(e){}
+  try{ const ar = await trMyMemory(en); if(ar) return done(post(ar), 'MyMemory'); }catch(e){}
+  cb('تعذّرت الترجمة — تأكد من اتصال الإنترنت', '—', true);
+}
+
+/* ---------- العرض ---------- */
+let pipWin = null, lastShown = '';
+// نعزل الأرقام والكلمات الإنجليزية داخل الجملة العربية عشان ما تنقلب (مثل 3/10 أو $1,250 أو Level 12)
+const bidi = s => s.replace(/[$#+\-]?[A-Za-z0-9](?:[A-Za-z0-9 .,:\/%+\-'&]*[A-Za-z0-9%])?/g, m => '⁦' + m + '⁩');
+function showSub(ar){
+  const el = $('#ar');
+  el.classList.remove('old');
+  if(ar === lastShown) return; lastShown = ar;
+  el.classList.remove('idle', 'fade'); void el.offsetWidth; el.classList.add('fade');
+  el.textContent = bidi(ar);
+  if(pipWin){ const p = pipWin.document.getElementById('pipAr'); if(p){ p.textContent = bidi(ar); p.style.opacity = 1; } }
+}
+function dimSub(){ // النص اختفى من اللعبة → نخفّت الترجمة عشان تواكب المشهد
+  $('#ar').classList.add('old');
+  if(pipWin){ const p = pipWin.document.getElementById('pipAr'); if(p) p.style.opacity = .35; }
+}
+const histItems = [];
+function addHistory(ar, en){
+  if(histItems[0] && histItems[0].en === en) return;
+  histItems.unshift({ ar, en }); if(histItems.length > 30) histItems.pop();
+  $('#histEmpty').hidden = true;
+  const ul = $('#hist'); ul.textContent = '';
+  for(const h of histItems){
+    const li = document.createElement('li');
+    const a = document.createElement('div'); a.className = 'a'; a.textContent = bidi(h.ar);
+    const e = document.createElement('div'); e.className = 'e'; e.textContent = h.en;
+    li.append(a, e); ul.append(li);
+  }
+}
+let arVoice = null;
+function pickVoice(){ if('speechSynthesis' in self) arVoice = speechSynthesis.getVoices().find(x => /^ar/i.test(x.lang)) || null; }
+if('speechSynthesis' in self){ pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+function speak(ar){
+  if(!S.tts || !('speechSynthesis' in self)) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(ar); u.lang = 'ar-SA'; if(arVoice) u.voice = arVoice; u.rate = 1.1;
+  speechSynthesis.speak(u);
+}
+
+/* ---------- الحلقة اللحظية ---------- */
+let stream = null, running = false, busy = false, lastSig = null, lastNorm = '', seq = 0, timer = null, wakeLock = null;
+const stats = { ocr: 0, runs: 0, preps: 0, log: [] };
+const dbg = (...a) => { if(stats.log.length > 400) stats.log.shift(); stats.log.push([Math.round(performance.now()), ...a]); };
+let emptyN = 0, loopGen = 0, gap = 0, lastRun = 0, cand = '';
+// القراءة: نأخذ فقط الكلمات اللي المحرك واثق منها
+function readText(data){
+  const W = data.words || [];
+  if(!W.length) return { text: clean(data.text || ''), conf: data.confidence || 0 };
+  const kept = W.filter(w => w.confidence >= 55 || (/\d/.test(w.text) && w.confidence >= 35));
+  const conf = kept.length ? kept.reduce((s,w) => s + w.confidence, 0)/kept.length : 0;
+  return { text: clean(kept.map(w => w.text).join(' ')), conf };
+}
+function noText(){
+  cand = '';
+  if(++emptyN === 3){ lastNorm = ''; dimSub(); }
+  gap = Math.min(160, gap + 40);   // لا يوجد نص → نخفف الفحص لتوفير المعالج
+}
+// حلقة متواصلة: فحص خفيف جداً لكل إطار، والقراءة الكاملة فقط لما تتغيّر المنطقة
+async function tick(){
+  const my = ++loopGen;
+  while(running && my === loopGen){
+    const now = performance.now();
+    const sig = now - lastRun >= gap ? quick() : null;
+    if(sig && changed(sig, lastSig)){
+      lastSig = sig; lastRun = now; stats.preps++;
+      if(!prepare()){ dbg('noline'); noText(); }
+      else {
+        emptyN = 0; stats.runs++;
+        const t0 = performance.now();
+        try{
+          const { data } = await worker.recognize(cv);
+          if(!running || my !== loopGen) break;
+          stats.ocr = Math.round(performance.now() - t0);
+          const { text, conf } = readText(data);
+          dbg('ocr', stats.ocr, Math.round(conf), text, (data.words||[]).map(w => w.text + ':' + Math.round(w.confidence)).join(' '));
+          if(!text) noText();
+          else {
+            const nn = norm(text);
+            if(sameText(nn, lastNorm)){
+              $('#ar').classList.remove('old'); cand = '';
+              gap = Math.min(250, gap + 50);   // نفس الجملة والخلفية تتحرك → نخفف
+            } else if(conf >= 88 || (cand && sameText(nn, cand))){
+              // جملة جديدة مؤكدة → نترجم فوراً
+              lastNorm = nn; cand = ''; gap = 0; handleText(text, t0);
+            } else {
+              // قراءة غير مؤكدة → نعيد القراءة فوراً للتأكيد بدل ما نعرض ترجمة غلط
+              cand = nn; lastSig = null; gap = 0; $('#en').textContent = text;
+            }
+          }
+        }catch(e){ console.error(e); }
+      }
+    }
+    lastRun = sig ? performance.now() : lastRun;
+    await new Promise(r => { timer = setTimeout(r, S.speed); });
+  }
+}
+function handleText(en, t0){
+  const my = ++seq;
+  $('#en').textContent = en;
+  translate(en, (ar, eng, fin) => {
+    if(my !== seq) return;
+    showSub(ar);
+    setEngine(eng + ' · ' + Math.round(performance.now() - t0) + ' مللي ث');
+    if(fin){ addHistory(ar, en); speak(ar); }
+  });
+}
+
+/* ---------- المصادر ---------- */
+const hasScreen = !!(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia);
+if(!hasScreen){ $('#bScreen').disabled = true; $('#screenNote').textContent = 'غير متاحة في متصفح الجوال — استخدم الكاميرا'; }
+if('documentPictureInPicture' in window) $('#bPip').hidden = false;
+
+$('#bScreen').onclick = async () => {
+  prepDevice();
+  try{
+    const s = await navigator.mediaDevices.getDisplayMedia({ video:{ frameRate:{ ideal:20, max:30 } }, audio:false }); // 20 إطار كافية للترجمة وأخف على الجهاز
+    startStream(s);
+  }catch(e){ toast('تم إلغاء مشاركة الشاشة'); }
+};
+async function openCam(deviceId){
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ toast('الكاميرا تحتاج رابط https'); return; }
+  const video = deviceId ? { deviceId:{ exact:deviceId }, width:{ ideal:1920 }, height:{ ideal:1080 } }
+                         : { facingMode:{ ideal:'environment' }, width:{ ideal:1920 }, height:{ ideal:1080 } };
+  try{
+    const s = await navigator.mediaDevices.getUserMedia({ video, audio:false });
+    await startStream(s);
+    fillCams(s.getVideoTracks()[0].getSettings().deviceId);
+  }catch(e){ toast('ما تم السماح بالكاميرا — اسمح لها من إعدادات المتصفح'); }
+}
+$('#bCam').onclick = () => { prepDevice(); openCam(); };
+async function fillCams(cur){
+  try{
+    const cams = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput');
+    const s = $('#camSel'); s.textContent = '';
+    cams.forEach((c, i) => { const o = document.createElement('option'); o.value = c.deviceId; o.textContent = c.label || ('كاميرا ' + (i+1)); if(c.deviceId === cur) o.selected = true; s.append(o); });
+    $('#camGrp').hidden = cams.length < 2;
+  }catch(e){}
+}
+$('#camSel').onchange = e => openCam(e.target.value);
+
+async function startStream(s){
+  stopAll(true);
+  stream = s; v.srcObject = s;
+  try{ await v.play(); }catch(e){}
+  s.getVideoTracks()[0].addEventListener('ended', () => stopAll());
+  document.body.classList.add('live'); $('#bStop').hidden = false;
+  try{ if(navigator.wakeLock) wakeLock = await navigator.wakeLock.request('screen'); }catch(e){}
+  const el = $('#ar'); if(el.classList.contains('idle')) el.textContent = 'جاهز… أي نص إنجليزي يظهر بالمنطقة بيترجم فوراً';
+  setStatus('load', 'تجهيز…');
+  try{ await initOCR(); }catch(e){ return; }
+  setStatus('on', 'يترجم الآن');
+  running = true; lastSig = null; lastNorm = ''; drawSel(); tick();
+}
+function stopAll(silent){
+  running = false; clearTimeout(timer);
+  if(stream){ stream.getTracks().forEach(t => t.stop()); stream = null; }
+  v.srcObject = null; document.body.classList.remove('live'); $('#bStop').hidden = true; $('#camGrp').hidden = true;
+  try{ wakeLock && wakeLock.release(); }catch(e){} wakeLock = null;
+  if(!silent) setStatus('', 'متوقف');
+}
+$('#bStop').onclick = () => stopAll();
+document.addEventListener('visibilitychange', async () => {
+  if(document.visibilityState === 'visible' && stream && navigator.wakeLock){ try{ wakeLock = await navigator.wakeLock.request('screen'); }catch(e){} }
+});
+
+/* ---------- نافذة عائمة فوق اللعبة ---------- */
+$('#bPip').onclick = async () => {
+  if(pipWin){ pipWin.close(); return; }
+  try{
+    pipWin = await documentPictureInPicture.requestWindow({ width:640, height:170 });
+    const d = pipWin.document; d.documentElement.dir = 'rtl'; d.documentElement.lang = 'ar';
+    for(const ss of document.styleSheets){
+      try{ const st = d.createElement('style'); st.textContent = [...ss.cssRules].map(r => r.cssText).join('\n'); d.head.append(st); }
+      catch(e){ if(ss.href){ const l = d.createElement('link'); l.rel = 'stylesheet'; l.href = ss.href; d.head.append(l); } }
+    }
+    d.body.className = 'pip';
+    const p = d.createElement('div'); p.id = 'pipAr'; p.textContent = lastShown || '…'; d.body.append(p);
+    $('#bPip').classList.add('active');
+    pipWin.addEventListener('pagehide', () => { pipWin = null; $('#bPip').classList.remove('active'); });
+  }catch(e){ toast('ما قدرت أفتح النافذة العائمة'); }
+};
+
+/* ---------- تجهيز مسبق للسرعة ---------- */
+setStatus('load', 'تحميل محرك القراءة…');
+initOCR().catch(()=>{});
+if('Translator' in self) Translator.availability({ sourceLanguage:'en', targetLanguage:'ar' })
+  .then(a => { if(a === 'available') prepDevice(); }).catch(()=>{});
+trGoogle('hi').then(() => setEngine('Google جاهز')).catch(() => setEngine('بدون إنترنت'));
+
+window.GT = { startStream, stats }; // للاختبار
+})();
+</script>
+</body>
+</html>
