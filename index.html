@@ -634,14 +634,16 @@ async function prepDevice(){ // مترجم Chrome المدمج: يشتغل عل�
       monitor(m){ m.addEventListener('downloadprogress', e => setEngine('تحميل مترجم الجهاز ' + Math.round(e.loaded*100) + '%')); } });
   }catch(e){ devTrTried = false; }
 }
+let googleCoolUntil = 0; // لو Google قال «كثرت الطلبات» نرتاح منه شوي ونستخدم البديل
 async function trGoogleOnce(text, ctl){
   const r = await fetch('https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ar&dt=t&q=' + encodeURIComponent(text), { signal: ctl.signal });
+  if(r.status === 429){ googleCoolUntil = performance.now() + 20000; throw 0; }
   if(!r.ok) throw 0;
   const j = await r.json();
   return j[0].map(x => x[0]).join('').trim();
 }
 // طلب احتياطي: لو الرد تأخر أكثر من 450ms نرسل طلب ثاني وناخذ الأسرع (يقلل التأخير المفاجئ)
-function trGoogle(text){
+function trGoogle(text, hedge = true){
   const ctls = [], kill = () => ctls.forEach(c => c.abort());
   const go = () => { const c = new AbortController(); ctls.push(c); return trGoogleOnce(text, c); };
   return new Promise((res, rej) => {
@@ -649,15 +651,16 @@ function trGoogle(text){
     const ok = v => { clearTimeout(h); clearTimeout(t); kill(); res(v); };
     const bad = () => { if(++fails >= started){ clearTimeout(h); clearTimeout(t); rej(0); } };
     go().then(ok, bad);
-    const h = setTimeout(() => { started++; go().then(ok, bad); }, 450);
+    const h = hedge ? setTimeout(() => { started++; go().then(ok, bad); }, 450) : 0;
     const t = setTimeout(() => { kill(); rej(0); }, 3500);
   });
 }
 // نفس النص مطلوب وهو بالطريق؟ ننتظر نفس الطلب بدل طلب جديد (الجملة الكاملة غالباً = آخر جزء انقال)
 const inflight = new Map();
-function googleShared(en){
+function googleShared(en, hedge = true){
   if(inflight.has(en)) return inflight.get(en);
-  const pr = trGoogle(en).then(post).catch(() => null);
+  if(performance.now() < googleCoolUntil) return Promise.resolve(null);
+  const pr = trGoogle(en, hedge).then(post).catch(() => null);
   inflight.set(en, pr); pr.finally(() => setTimeout(() => inflight.delete(en), 50));
   return pr;
 }
@@ -681,19 +684,27 @@ function prep(en){
 }
 // تنسيق الناتج: أرقام إنجليزية مثل اللعبة + التأكد إن ما ضاع رقم
 const AR_DIG = '٠١٢٣٤٥٦٧٨٩';
+const ENT = { '&quot;':'"', '&#39;':"'", '&#039;':"'", '&amp;':'&', '&lt;':'', '&gt;':'', '&nbsp;':' ' };
 function post(ar){
-  return ar.replace(/[٠-٩]/g, d => AR_DIG.indexOf(d)).replace(/٪/g, '%').replace(/٫/g, '.').replace(/٬/g, ',').replace(/\s+/g, ' ').trim();
+  return String(ar || '')
+    .replace(/&(?:quot|#0?39|amp|lt|gt|nbsp);/g, m => ENT[m] ?? ' ')        // رموز HTML من الخدمة الاحتياطية
+    .replace(/[\u0000-\u001F\u007F-\u009F\u200B-\u200F\u202A-\u202E\u2060-\u206F\uFEFF\uFFFD\u0640]/g, '') // رموز مخفية/تالفة وتطويل
+    .replace(/[*_#|~^<>{}\[\]\\`=@]+/g, ' ')                                 // رموز غريبة
+    .replace(/[٠-٩]/g, d => AR_DIG.indexOf(d)).replace(/٪/g, '%').replace(/٫/g, '.').replace(/٬/g, ',')
+    .replace(/\s+([،؛؟!.,:%])/g, '$1').replace(/([(«"])\s+/g, '$1')
+    .replace(/([.،!؟?])\1+/g, '$1')                                            // علامات مكررة
+    .replace(/\s{2,}/g, ' ').trim();
 }
 const nums = s => (s.match(/\d+(?:[.,:\/]\d+)*/g) || []).map(x => x.replace(/,/g, ''));
 const keepsNums = (en, ar) => { const A = nums(ar); return nums(en).every(n => A.includes(n)); };
 
 // يعرض أسرع ترجمة متاحة فوراً (من الجهاز)، ثم يستبدلها بالأدق (Google) لما توصل
-async function translate(raw, cb){
+async function translate(raw, cb, opt = {}){
   if(cache.has(raw)){ cb(cache.get(raw), 'فوري ⚡', true); return; }
   const en = prep(raw);
   let final = false, devAr = null;
   if(devTr) devTr.translate(en).then(ar => { devAr = ar && post(ar); if(!final && devAr) cb(devAr, 'الجهاز ⚡', false); }).catch(()=>{});
-  const g = await googleShared(en);
+  const g = await googleShared(en, !opt.light);
   const done = (ar, eng) => { final = true; cache.set(raw, ar); cb(ar, eng, true); };
   if(g){
     // لو Google ضيّع رقم وترجمة الجهاز حافظة الأرقام، نعتمد ترجمة الجهاز
@@ -708,28 +719,41 @@ async function translate(raw, cb){
 /* ---------- العرض ---------- */
 let pipWin = null, lastShown = '';
 // نعزل الأرقام والكلمات الإنجليزية داخل الجملة العربية عشان ما تنقلب (مثل 3/10 أو $1,250 أو Level 12)
-const bidi = s => s.replace(/[$#+\-]?[A-Za-z0-9](?:[A-Za-z0-9 .,:\/%+\-'&]*[A-Za-z0-9%])?/g, m => '⁦' + m + '⁩');
+const LTR_RUN = /[$+\-]?[A-Za-z0-9](?:[A-Za-z0-9 .,:\/%+\-'&]*[A-Za-z0-9%])?/g;
+function setBidi(el, s){ // نص عربي + مقاطع إنجليزية/أرقام معزولة بعناصر <bdi> (بدون رموز مخفية)
+  el.textContent = '';
+  const doc = el.ownerDocument; let i = 0, m;
+  LTR_RUN.lastIndex = 0;
+  while((m = LTR_RUN.exec(s))){
+    if(m.index > i) el.append(doc.createTextNode(s.slice(i, m.index)));
+    const b = doc.createElement('bdi'); b.dir = 'ltr'; b.textContent = m[0]; el.append(b);
+    i = m.index + m[0].length;
+  }
+  if(i < s.length) el.append(doc.createTextNode(s.slice(i)));
+}
 function showSub(ar){
   const el = $('#ar');
   el.classList.remove('old');
   if(ar === lastShown) return; lastShown = ar;
   el.classList.remove('idle', 'fade'); void el.offsetWidth; el.classList.add('fade');
-  el.textContent = bidi(ar);
-  if(pipWin){ const p = pipWin.document.getElementById('pipAr'); if(p){ p.textContent = bidi(ar); p.style.opacity = 1; } }
+  setBidi(el, ar);
+  if(pipWin){ const p = pipWin.document.getElementById('pipAr'); if(p){ setBidi(p, ar); p.style.opacity = 1; } }
 }
 function dimSub(){ // النص اختفى من اللعبة → نخفّت الترجمة عشان تواكب المشهد
   $('#ar').classList.add('old');
   if(pipWin){ const p = pipWin.document.getElementById('pipAr'); if(p) p.style.opacity = .35; }
 }
 const histItems = [];
-function addHistory(ar, en){
-  if(histItems[0] && histItems[0].en === en) return;
-  histItems.unshift({ ar, en }); if(histItems.length > 30) histItems.pop();
+function addHistory(ar, en, order = seq){
+  if(histItems.some(h => h.en === en)) return;
+  // نرتّب حسب وقت الكلام، حتى لو ترجمة جملة قديمة وصلت متأخرة
+  histItems.push({ ar, en, order }); histItems.sort((x, y) => y.order - x.order);
+  if(histItems.length > 30) histItems.pop();
   $('#histEmpty').hidden = true;
   const ul = $('#hist'); ul.textContent = '';
   for(const h of histItems){
     const li = document.createElement('li');
-    const a = document.createElement('div'); a.className = 'a'; a.textContent = bidi(h.ar);
+    const a = document.createElement('div'); a.className = 'a'; setBidi(a, h.ar);
     const e = document.createElement('div'); e.className = 'e'; e.textContent = h.en;
     li.append(a, e); ul.append(li);
   }
@@ -815,7 +839,7 @@ function handleText(en, t0){
 
 /* ---------- وضع الاستماع: صوت → نص إنجليزي → عربي ---------- */
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-let rec = null, listening = false, recGen = 0, lastInterimT = 0, interimTimer = null, pendingInterim = '', lastFinal = '', restartN = 0;
+let rec = null, listening = false, recGen = 0, lastFinal = '', lastFull = '', restartN = 0;
 const MAX_WORDS = 22; // الجملة الطويلة: نعرض آخر جزء عشان تبقى الترجمة ملاحقة للكلام
 const tail = t => { const w = t.split(' '); return w.length > MAX_WORDS ? w.slice(-MAX_WORDS).join(' ') : t; };
 const tidy = t => { t = t.replace(/\s+/g, ' ').trim(); return t ? t[0].toUpperCase() + t.slice(1) : t; };
@@ -835,7 +859,7 @@ function startListening(){
   runRec();
 }
 function runRec(){
-  const my = ++recGen;
+  const my = ++recGen; lastFull = '';
   rec = new SR();
   rec.lang = 'en-US'; rec.continuous = true; rec.interimResults = true; rec.maxAlternatives = 1;
   rec.onresult = e => {
@@ -866,7 +890,7 @@ function runRec(){
   try{ rec.start(); }catch(e){ setTimeout(() => { if(listening && my === recGen) runRec(); }, 300); }
 }
 function stopListening(){
-  listening = false; recGen++; setMicUI(false); clearTimeout(interimTimer);
+  listening = false; recGen++; setMicUI(false); resetSpeechQueue();
   try{ rec && rec.abort(); }catch(e){} rec = null;
   $('#ar').classList.remove('interim');
   if(!stream) setStatus('', 'متوقف');
@@ -875,30 +899,81 @@ const toggleMic = () => listening ? stopListening() : startListening();
 $('#bMic').onclick = toggleMic; $('#bMic2').onclick = toggleMic;
 if(!SR){ $('#bMic').disabled = true; $('#micNote').textContent = 'متصفحك ما يدعم التعرّف على الكلام — استخدم Chrome أو Safari'; $('#bMic2').hidden = true; }
 
-// الكلام الجزئي يترجم كل ~0.3 ثانية وهو يتكلم، والجملة الكاملة تترجم فوراً وتنحفظ
-function speechText(t, final){
-  t = tidy(t); if(!t) return;
+// ---- تنظيف الكلام قبل الترجمة ----
+// الآيفون يكتب الشتائم بنجوم (f***) — نحوّلها لكلمة مفهومة بدل ما تطلع رموز في الترجمة
+const CENSOR = { f:'freaking', s:'crap', b:'jerk', a:'jerk', d:'damn', h:'hell', p:'jerk', c:'jerk', w:'jerk' };
+const QWORDS = /^(what|where|when|why|how|who|whose|which|did|do|does|are|is|was|were|can|could|would|will|should|shall|have|has|had|may|might|isn't|aren't|don't|didn't|won't|can't|wasn't|weren't)\b/i;
+function cleanSpeech(t){
+  return String(t || '')
+    // الشتائم المراقَبة حسب سياقها عشان المعنى يوصل صح
+    .replace(/\b(what|who|where|why|how) the f\*+/gi, '$1 the hell')
+    .replace(/\bf\*+(?:ing|in'?|in)\b/gi, 'freaking')
+    .replace(/\bf\*+ (you|off|this|that|him|her|them|it)\b/gi, 'screw $1')
+    .replace(/\bson of a b\*+/gi, 'bastard')
+    .replace(/\bbulls?\*+t?\b/gi, 'nonsense')
+    .replace(/\bs\*+t?\b/gi, 'crap')
+    .replace(/\b([A-Za-z])[A-Za-z]*\*+[A-Za-z*']*/g, (m, c) => CENSOR[c.toLowerCase()] || '')
+    .replace(/\*+/g, ' ')
+    .replace(/\b(?:um+|uh+|erm+|hmm+|mm+|uh-huh)\b[,.]?/gi, ' ')          // كلمات تردد
+    .replace(/[_#|~^<>{}\[\]\\`=@]+/g, ' ')
+    .replace(/\b(\w+)(?:\s+\1\b)+/gi, '$1')                               // كلمة مكررة
+    .replace(/\s+([,.!?])/g, '$1')
+    .replace(/\s+/g, ' ').trim();
+}
+// الكلام المسموع ما فيه علامات ترقيم → نضيف نقطة أو علامة سؤال عشان الترجمة تطلع أدق
+const punctuate = t => /[.!?]$/.test(t) ? t : t + (QWORDS.test(t) ? '?' : '.');
+
+// ---- جدولة الترجمة الجزئية: طلب واحد بالطريق، وأول ما يرجع نرسل آخر كلام انقال (بدون طابور يأخّر) ----
+let trBusy = 0, trNext = '', lastSent = '', lastSendT = 0, pumpTimer = null;
+const MAX_INFLIGHT = 2; // طلبين بنفس الوقت: الترجمة تلاحق الكلام السريع بدون ما نغرق الخدمة
+function pumpInterim(){
+  clearTimeout(pumpTimer);
+  if(trBusy >= MAX_INFLIGHT || !trNext) return;
+  const wait = 180 - (performance.now() - lastSendT);
+  if(wait > 0){ pumpTimer = setTimeout(pumpInterim, wait); return; }
+  const t = trNext; trNext = '';
+  if(t === lastSent) return;
+  lastSent = t; trBusy++; lastSendT = performance.now();
+  let freed = false;
+  const release = () => { if(!freed){ freed = true; trBusy = Math.max(0, trBusy - 1); pumpInterim(); } };
+  const guard = setTimeout(release, 4000); // احتياط لو الشبكة علّقت
+  translateSpeech(t, false, () => { clearTimeout(guard); release(); });
+}
+function resetSpeechQueue(){ trNext = ''; lastSent = ''; clearTimeout(pumpTimer); }
+
+function speechText(raw, final){
+  let t = tidy(cleanSpeech(raw)); if(!t) return;
   if(final){
-    clearTimeout(interimTimer); pendingInterim = '';
-    if(t === lastFinal) return; lastFinal = t;
-    translateSpeech(t, true);
+    // بعض الجوالات (أندرويد) ترجع كل الكلام من البداية مع كل جملة جديدة → نشيل كل اللي انقال قبل
+    const full = t, lf = lastFull.toLowerCase();
+    if(lf && full.toLowerCase().startsWith(lf + ' ')) t = tidy(full.slice(lastFull.length));
+    lastFull = full;
+    if(!t || norm(t) === norm(lastFinal)) return;
+    lastFinal = t; resetSpeechQueue();
+    const good = punctuate(t);
+    // لو نفس الكلام ترجمته جاهزة أو بالطريق: نعرضها فوراً، وبعدها نحطّ الترجمة الأدق (مع الترقيم)
+    if(good !== t && (cache.has(t) || inflight.has(prep(t)))) translateSpeech(t, true, null, false);
+    translateSpeech(good, true);
     return;
   }
-  pendingInterim = t;
-  const now = performance.now(), wait = 300 - (now - lastInterimT);
-  if(wait <= 0){ lastInterimT = now; translateSpeech(t, false); }
-  else { clearTimeout(interimTimer); interimTimer = setTimeout(() => { if(pendingInterim){ lastInterimT = performance.now(); translateSpeech(pendingInterim, false); } }, wait); }
+  const shown = tail(t);
+  $('#en').textContent = shown;             // الإنجليزي يظهر فوراً وهو يتكلم
+  if(shown.split(' ').length < 2) return;   // كلمة وحدة لحالها تترجم غلط غالباً
+  trNext = shown; pumpInterim();
 }
-function translateSpeech(en, final){
-  const my = ++seq, t0 = performance.now(), shown = final ? en : tail(en);
-  $('#en').textContent = shown;
-  translate(shown, (ar, eng, fin) => {
+function translateSpeech(en, final, done, keep = true){
+  const my = ++seq, t0 = performance.now(); let called = false;
+  if(final) $('#en').textContent = en;
+  translate(en, (ar, eng, fin) => {
+    if(fin && done && !called){ called = true; done(); }
+    if(eng === '—' && !final) return;        // فشل جزئي → ما نعرض رسالة خطأ وسط الكلام
+    // الجملة الكاملة تنحفظ بالسجل دايماً، حتى لو الكلام اللي بعدها صار معروض على الشاشة
+    if(fin && final && keep && eng !== '—'){ addHistory(ar, en, my); stats.speech.push({ en, ar, ms: Math.round(performance.now() - t0) }); }
     if(my < shownSeq) return; shownSeq = my;
     showSub(ar);
     $('#ar').classList.toggle('interim', !final);
     setEngine('صوت · ' + eng + ' · ' + Math.round(performance.now() - t0) + ' مللي ث');
-    if(fin && final){ addHistory(ar, en); stats.speech.push({ en, ar, ms: Math.round(performance.now() - t0) }); }
-  });
+  }, { light: !final });
 }
 
 /* ---------- المصادر ---------- */
