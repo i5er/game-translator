@@ -623,6 +623,16 @@ function similar(a, b){ // تشابه الحروف الثنائية — لتجا
 
 /* ---------- الترجمة ---------- */
 const cache = new Map();
+// نحفظ آخر الترجمات في الجهاز: الجمل المتكررة (Let's go, Come on, Watch out…) تطلع فوراً حتى بعد إعادة فتح الموقع
+const CACHE_KEY = 'gt_cache_v1', CACHE_MAX = 600;
+try{ const saved = JSON.parse(localStorage.getItem(CACHE_KEY) || '[]'); for(const [k, v] of saved) cache.set(k, v); }catch(e){}
+let saveT = null;
+function saveCache(){
+  clearTimeout(saveT);
+  saveT = setTimeout(() => {
+    try{ localStorage.setItem(CACHE_KEY, JSON.stringify([...cache].slice(-CACHE_MAX))); }catch(e){}
+  }, 1500);
+}
 let devTr = null, devTrTried = false;
 async function prepDevice(){ // مترجم Chrome المدمج: يشتغل على الجهاز وبدون إنترنت
   if(devTr || devTrTried || !('Translator' in self)) return;
@@ -651,7 +661,8 @@ function trGoogle(text, hedge = true){
     const ok = v => { clearTimeout(h); clearTimeout(t); kill(); res(v); };
     const bad = () => { if(++fails >= started){ clearTimeout(h); clearTimeout(t); rej(0); } };
     go().then(ok, bad);
-    const h = hedge ? setTimeout(() => { started++; go().then(ok, bad); }, 450) : 0;
+    // طلب احتياطي: 450ms للجملة الكاملة، 650ms للكلام الجزئي
+    const h = setTimeout(() => { started++; go().then(ok, bad); }, hedge ? 450 : 650);
     const t = setTimeout(() => { kill(); rej(0); }, 3500);
   });
 }
@@ -665,7 +676,9 @@ function googleShared(en, hedge = true){
   return pr;
 }
 // إبقاء الاتصال بـ Google دافي عشان ما نخسر وقت فتح اتصال جديد
-setInterval(() => { if(running) trGoogleOnce('ok', new AbortController()).catch(()=>{}); }, 15000);
+// (كان يشتغل مع الكاميرا بس — في وضع الاستماع كان الاتصال يبرد وكل جملة تدفع وقت فتح اتصال جديد)
+const warmGoogle = () => { if(performance.now() >= googleCoolUntil) trGoogleOnce('ok', new AbortController()).catch(()=>{}); };
+setInterval(() => { if((running || listening) && document.visibilityState === 'visible') warmGoogle(); }, 8000);
 async function trMyMemory(text){
   const r = await fetch('https://api.mymemory.translated.net/get?langpair=en|ar&q=' + encodeURIComponent(text));
   const j = await r.json(); return j && j.responseData && j.responseData.translatedText;
@@ -705,7 +718,7 @@ async function translate(raw, cb, opt = {}){
   let final = false, devAr = null;
   if(devTr) devTr.translate(en).then(ar => { devAr = ar && post(ar); if(!final && devAr) cb(devAr, 'الجهاز ⚡', false); }).catch(()=>{});
   const g = await googleShared(en, !opt.light);
-  const done = (ar, eng) => { final = true; cache.set(raw, ar); cb(ar, eng, true); };
+  const done = (ar, eng) => { final = true; cache.delete(raw); cache.set(raw, ar); saveCache(); cb(ar, eng, true); };
   if(g){
     // لو Google ضيّع رقم وترجمة الجهاز حافظة الأرقام، نعتمد ترجمة الجهاز
     if(!keepsNums(raw, g) && devAr && keepsNums(raw, devAr)) return done(devAr, 'الجهاز');
@@ -851,6 +864,7 @@ function setMicUI(on){
 }
 function startListening(){
   if(!SR){ toast('متصفحك ما يدعم ترجمة الصوت — استخدم Chrome أو Safari'); return; }
+  warmGoogle();
   prepDevice();
   if('speechSynthesis' in self) speechSynthesis.cancel();
   listening = true; restartN = 0; setMicUI(true);
@@ -925,11 +939,11 @@ const punctuate = t => /[.!?]$/.test(t) ? t : t + (QWORDS.test(t) ? '?' : '.');
 
 // ---- جدولة الترجمة الجزئية: طلب واحد بالطريق، وأول ما يرجع نرسل آخر كلام انقال (بدون طابور يأخّر) ----
 let trBusy = 0, trNext = '', lastSent = '', lastSendT = 0, pumpTimer = null;
-const MAX_INFLIGHT = 2; // طلبين بنفس الوقت: الترجمة تلاحق الكلام السريع بدون ما نغرق الخدمة
+const MAX_INFLIGHT = 3; // 3 طلبات بنفس الوقت: الترجمة تلاحق الكلام السريع بدون ما نغرق الخدمة
 function pumpInterim(){
   clearTimeout(pumpTimer);
   if(trBusy >= MAX_INFLIGHT || !trNext) return;
-  const wait = 180 - (performance.now() - lastSendT);
+  const wait = 110 - (performance.now() - lastSendT);
   if(wait > 0){ pumpTimer = setTimeout(pumpInterim, wait); return; }
   const t = trNext; trNext = '';
   if(t === lastSent) return;
