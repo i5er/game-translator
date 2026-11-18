@@ -782,8 +782,11 @@ function handleText(en, t0){
 }
 
 /* ---------- المصادر ---------- */
-const hasScreen = !!(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia);
-if(!hasScreen){ $('#bScreen').disabled = true; $('#screenNote').textContent = 'غير متاحة في متصفح الجوال — استخدم الكاميرا'; }
+// متصفحات الجوال (آيفون وأندرويد) ما تسمح للمواقع بمشاركة الشاشة — بعضها يُظهر الخاصية لكنها ترفض دائماً
+const isMobile = (navigator.userAgentData && navigator.userAgentData.mobile) || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
+  || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); // آيباد
+const hasScreen = !!(navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) && !isMobile;
+if(!hasScreen){ $('#bScreen').disabled = true; $('#screenNote').textContent = 'الجوالات ما تسمح بها من المتصفح — استخدم الكاميرا أو افتح الموقع على الكمبيوتر'; }
 if('documentPictureInPicture' in window) $('#bPip').hidden = false;
 
 $('#bScreen').onclick = async () => {
@@ -791,7 +794,7 @@ $('#bScreen').onclick = async () => {
   try{
     const s = await navigator.mediaDevices.getDisplayMedia({ video:{ frameRate:{ ideal:20, max:30 } }, audio:false }); // 20 إطار كافية للترجمة وأخف على الجهاز
     startStream(s);
-  }catch(e){ toast('تم إلغاء مشاركة الشاشة'); }
+  }catch(e){ toast(e && e.name === 'NotAllowedError' ? 'تم إلغاء المشاركة أو المتصفح رفضها' : 'متصفحك ما يدعم مشاركة الشاشة — استخدم الكاميرا'); }
 };
 async function openCam(deviceId){
   if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ toast('الكاميرا تحتاج رابط https'); return; }
