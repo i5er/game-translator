@@ -1,18 +1,22 @@
 {
+  "id": "./",
   "name": "مترجم الألعاب اللحظي",
   "short_name": "مترجم الألعاب",
-  "description": "ترجمة لحظية لنصوص الألعاب والفيديو من الإنجليزي للعربي",
+  "description": "ترجمة لحظية لنصوص وأصوات الألعاب والفيديو من الإنجليزي للعربي",
   "lang": "ar",
   "dir": "rtl",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "orientation": "any",
   "background_color": "#07080f",
   "theme_color": "#07080f",
+  "categories": ["utilities", "games", "education"],
   "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
-    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
   ]
 }
